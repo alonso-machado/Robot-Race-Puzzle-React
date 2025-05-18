@@ -1,0 +1,40 @@
+UI RULES:
+1. Each robot component should show:
+   - Robot name and type (e.g., "🤖 Robot Pink (BFS)")
+   - Moves counter: "Moves: X/200" (where X is current moves)
+   - Completion status: "Completed" or "In Progress"
+   - Brief Explanation of the algorithm used
+   - Grid display always in center of the cell and justified center with:
+     * Robot emoji from props for robot's current position
+     * 🧱 The Brick Wall Emoji for blocked cells
+     * Numbers for visit count of each cell
+     * 0 for unvisited cells
+   - No progress percentage or completion status
+
+2. Grid Styling:
+   - Gray background for walls
+   - Larger text for better visibility
+   - Proper spacing and borders between cells
+   - Responsive grid that fits the container
+   - The Robot color should be used in the title
+   - The Robot color should be used as the background color for the visited cells with lower intensity
+
+3. Color Scheme:
+   - Each robot can have a distinct color for its header and background
+   - Keep the grid neutral (white/gray) for clarity
+   - Use standard emojis for robot and walls
+
+
+GAME RULES:
+1. The Robot should start at (0,0) position.
+2. The Robot should move to the least visited cell that is not Blocked. (UP, DOWN, LEFT, RIGHT) every 250 milliseconds.
+3. Update the counter for that CELL only if the ROBOT PASSED THERE NOW otherwise stay at previous value!
+4. The Robot should try to visit all the possible cells in a GRID of size X that will be provided by the user.
+5. If the Robot was not able to visit all cells after MAX_MOVES moves, the robot should stop.
+6. If the Robot fails and stops, he should print on screen the coordinates of what cells he was blocked in a list to verify if it was impossible path!
+7. The Winner or Winners are the Robots with less moves to visit ALL possible cells! (No other winner rules must be applied there is just this TIE for winner)
+8. There should be a STOP button to stop the RACE PUZZLE at any time!
+9. The default value for Grid Size is 8 and Max Moves is 200 and Obstacle Chance is 0.2
+10. The user should be able to change the Grid Size, Max Moves and Obstacle Chance
+11. The max allowed grid size is 12 and lowest is 5 and max allowed moves is 500
+12. Never add console commands like console.logs!
