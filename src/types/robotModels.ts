@@ -18,10 +18,7 @@ export interface RobotProps {
   maxMoves: number;
   onFinish: (result: RobotResult) => void;
   stopSignal: boolean;
-  robotName: string;
-  robotEmoji: string;
-  robotColor: 'red' | 'green' | 'blue' | 'purple';
-  robotDescription: string;
+  robotConfig: RobotConfig;
 }
 
 export type Position = [number, number];

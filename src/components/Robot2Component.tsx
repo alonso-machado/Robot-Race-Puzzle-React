@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { RobotProps, Position, Grid } from './types/robot';
+import React, { useState, useEffect, useRef } from 'react';
+import { RobotProps, Position, Grid } from '../types/robotModels';
+import { getColorWithOpacity } from '../utils/colors';
 
 const MOVE_DELAY = 250;
 
@@ -9,11 +10,9 @@ const Robot2Component: React.FC<RobotProps> = ({
   maxMoves, 
   onFinish, 
   stopSignal,
-  robotName,
-  robotEmoji,
-  robotColor,
-  robotDescription
+  robotConfig
 }) => {
+  const { name: robotName, emoji: robotEmoji, color: robotColor, description: robotDescription } = robotConfig;
   const [robotPos, setRobotPos] = useState<Position>([0, 0]);
   // Separate visit count matrix (0 = unvisited, >0 = number of visits)
   const [visitCount, setVisitCount] = useState<number[][]>(() => 
@@ -188,16 +187,7 @@ const Robot2Component: React.FC<RobotProps> = ({
     }
   }, [isCleaningComplete, visitCount, totalCleanableCells, moves, onFinish, grid, gridSize, robotName]);
 
-  // Helper function to get color with opacity
-  const getColorWithOpacity = (color: string, opacity: number) => {
-    const colors: Record<string, string> = {
-      red: `rgba(252, 165, 165, ${opacity})`,
-      green: `rgba(134, 239, 172, ${opacity})`,
-      blue: `rgba(147, 197, 253, ${opacity})`,
-      purple: `rgba(216, 180, 254, ${opacity})`
-    };
-    return colors[color] || color;
-  };
+  // Using shared getColorWithOpacity from utils/colors
 
   return (
     <div className="p-4 border rounded-lg shadow-sm bg-white">
@@ -220,11 +210,12 @@ const Robot2Component: React.FC<RobotProps> = ({
         </div>
       )}
       
-      <div className="grid gap-1 bg-gray-100 p-2 rounded-md" 
+      <div id="grid" className="grid gap-1 bg-gray-100 p-2 rounded-md" 
            style={{
              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
              maxWidth: '100%',
-             margin: '0 auto'
+             margin: '0 auto',
+             display: 'grid'
            }}>
         {grid.map((row, i) =>
           row.map((cell, j) => (

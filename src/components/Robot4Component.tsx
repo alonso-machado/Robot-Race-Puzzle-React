@@ -1,127 +1,80 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { RobotProps, RobotResult, Position, Grid } from './types/robot';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { RobotProps, RobotResult, Position, Grid } from '../types/robotModels';
+import { getColorWithOpacity } from '../utils/colors';
 
 const MOVE_DELAY = 250; // Delay between moves in milliseconds
 
-// Heuristic function for A* (Manhattan distance)
-const calculateHeuristic = (x1: number, y1: number, x2: number, y2: number): number => {
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2);
-};
-
-// A* algorithm to find the shortest path to the nearest unvisited cell
-const findPathToNearestUnvisited = (
-  grid: Grid,
-  visitCount: number[][],
-  start: Position
-): Position[] => {
-  const [startX, startY] = start;
-  
-  // Priority queue (min-heap) based on fScore
-  const openSet: { pos: Position; fScore: number }[] = [];
-  const cameFrom: Record<string, Position> = {};
-  
-  // gScore[node] = cost of the cheapest path from start to node
-  const gScore: Record<string, number> = {};
-  
-  // fScore[node] = gScore[node] + h(node)
-  const fScore: Record<string, number> = {};
-  
-  // Initialize scores
-  const startKey = `${startX},${startY}`;
-  gScore[startKey] = 0;
-  fScore[startKey] = calculateHeuristic(startX, startY, 0, 0);
-  openSet.push({ pos: [startX, startY], fScore: fScore[startKey] });
-  
-  // Track visited nodes
-  const visited = new Set<string>();
-  
-  // Directions: up, down, left, right
-  const directions = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
+// Helper: Get all valid neighbors
+function getNeighbors(pos: Position, grid: Grid): Position[] {
+  const [x, y] = pos;
+  const directions: [number, number][] = [
+    [0, 1], // right
+    [1, 0], // down
+    [0, -1], // left
+    [-1, 0], // up
   ];
-  
-  // First, try to find any unvisited cell
-  while (openSet.length > 0) {
-    // Get node with lowest fScore
-    openSet.sort((a, b) => a.fScore - b.fScore);
-    const current = openSet.shift()!;
-    const [currentX, currentY] = current.pos;
-    const currentKey = `${currentX},${currentY}`;
+
+  return directions
+    .map(([dx, dy]) => [x + dx, y + dy] as Position)
+    .filter(
+      ([nx, ny]) =>
+        nx >= 0 && nx < grid.length && ny >= 0 && ny < grid[0].length && grid[nx][ny] !== -1
+    );
+}
+
+// Improved DFS implementation to find the next move
+function findNextMove(
+  grid: Grid,
+  visitCount: Grid,
+  start: Position,
+  visited: Set<string> = new Set()
+): Position[] | null {
+  const [startX, startY] = start;
+  visited.add(`${startX},${startY}`);
+
+  // If this cell is unvisited, this is our target
+  if (visitCount[startX][startY] === 0) {
+    return [start];
+  }
+
+  // Get unvisited neighbors, sorted by visit count (prefer less visited)
+  const neighbors = getNeighbors([startX, startY], grid)
+    .filter(([x, y]) => !visited.has(`${x},${y}`))
+    .sort((a, b) => {
+      const [ax, ay] = a;
+      const [bx, by] = b;
+      return visitCount[ax][ay] - visitCount[bx][by];
+    });
+
+  // Try each neighbor
+  for (const [nx, ny] of neighbors) {
+    const path = findNextMove(
+      grid,
+      visitCount,
+      [nx, ny],
+      new Set(visited) // Pass a new set to avoid mutation
+    );
     
-    // If we found an unvisited cell, reconstruct and return the path
-    if (visitCount[currentX][currentY] === 0) {
-      const path: Position[] = [];
-      let currentPos: Position = [currentX, currentY];
-      
-      while (cameFrom[`${currentPos[0]},${currentPos[1]}`]) {
-        path.unshift(currentPos);
-        currentPos = cameFrom[`${currentPos[0]},${currentPos[1]}`];
-      }
-      
-      return path;
-    }
-    
-    // Mark as visited
-    visited.add(currentKey);
-    
-    // Explore neighbors
-    for (const [dx, dy] of directions) {
-      const nx = currentX + dx;
-      const ny = currentY + dy;
-      const neighborKey = `${nx},${ny}`;
-      
-      // Check if neighbor is valid and not blocked
-      if (
-        nx < 0 ||
-        nx >= grid.length ||
-        ny < 0 ||
-        ny >= grid[0].length ||
-        grid[nx][ny] === -1 ||
-        visited.has(neighborKey)
-      ) {
-        continue;
-      }
-      
-      // Calculate tentative gScore (lower is better)
-      // We add a small penalty for visited cells to encourage exploration
-      const visitPenalty = visitCount[nx][ny] * 0.1; // Small penalty for visited cells
-      const tentativeGScore = (gScore[currentKey] || 0) + 1 + visitPenalty;
-      
-      // If this path to neighbor is better than any previous one
-      if (gScore[neighborKey] === undefined || tentativeGScore < gScore[neighborKey]) {
-        // Record the best path
-        cameFrom[neighborKey] = [currentX, currentY];
-        gScore[neighborKey] = tentativeGScore;
-        
-        // Calculate fScore = gScore + h(n)
-        fScore[neighborKey] = gScore[neighborKey] + calculateHeuristic(nx, ny, 0, 0);
-        
-        // Add to open set if not already there
-        if (!openSet.some((item) => item.pos[0] === nx && item.pos[1] === ny)) {
-          openSet.push({ pos: [nx, ny], fScore: fScore[neighborKey] });
-        }
-      }
+    if (path) {
+      // If we found a path to an unvisited cell, prepend current position
+      return [[startX, startY], ...path];
     }
   }
-  
-  // No unvisited cell found, return empty path
-  return [];
-};
 
-const Robot3Component: React.FC<RobotProps> = ({
-  grid,
-  gridSize,
-  maxMoves,
-  onFinish,
+  
+  // If no path found through neighbors, return null
+  return null;
+}
+
+const Robot4Component: React.FC<RobotProps> = ({ 
+  grid, 
+  gridSize, 
+  maxMoves, 
+  onFinish, 
   stopSignal,
-  robotName,
-  robotEmoji,
-  robotColor,
-  robotDescription
-}) => {
+  robotConfig
+}: RobotProps) => {
+  const { name: robotName, emoji: robotEmoji, color: robotColor, description: robotDescription } = robotConfig;
   // Robot state
   const [robotPos, setRobotPos] = useState<Position>([0, 0]);
   const [moves, setMoves] = useState(1);
@@ -161,12 +114,6 @@ const Robot3Component: React.FC<RobotProps> = ({
     setBlockedCells([]);
     setCurrentPath([]);
   }, [grid, gridSize, calculateCleanableCells]);
-
-  // Calculate total cleanable cells
-  useEffect(() => {
-    const cleanable = grid.flat().filter((cell) => cell !== -1).length;
-    setTotalCleanableCells(cleanable);
-  }, [grid]);
 
   // Main movement logic
   useEffect(() => {
@@ -217,29 +164,52 @@ const Robot3Component: React.FC<RobotProps> = ({
       return () => clearTimeout(timer);
     }
     
-    // If we don't have a path, find a new one using A*
-    const path = findPathToNearestUnvisited(grid, visitCountRef.current, robotPos);
+    // If we don't have a path, find a new one using DFS
+    const path = findNextMove(
+      grid, 
+      visitCountRef.current, 
+      robotPos
+    );
 
-    if (path.length === 0) {
-      // Find all blocked cells around the robot
-      const [x, y] = robotPos;
-      const blocked = [
-        [-1, 0], [1, 0], [0, -1], [0, 1]
-      ]
-        .map(([dx, dy]) => [x + dx, y + dy] as Position)
-        .filter(([nx, ny]) => 
-          nx >= 0 && nx < grid.length && 
-          ny >= 0 && ny < grid[0].length && 
-          grid[nx][ny] === -1
-        );
-      setBlockedCells(blocked);
-      setIsCleaningComplete(true);
+    if (!path || path.length < 2) {
+      // No path found to unvisited cell, check if we're done
+      let allVisited = true;
+      for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+          if (grid[i][j] !== -1 && visitCountRef.current[i][j] === 0) {
+            allVisited = false;
+            break;
+          }
+        }
+        if (!allVisited) break;
+      }
+      
+      if (allVisited) {
+        // All cells have been visited
+        setIsCleaningComplete(true);
+      } else {
+        // Find all blocked cells around the robot
+        const [x, y] = robotPos;
+        const blocked = [
+          [-1, 0], [1, 0], [0, -1], [0, 1]
+        ]
+          .map(([dx, dy]) => [x + dx, y + dy] as Position)
+          .filter(([nx, ny]) => 
+            nx >= 0 && nx < grid.length && 
+            ny >= 0 && ny < grid[0].length && 
+            grid[nx][ny] === -1
+          );
+        setBlockedCells(blocked);
+        setIsCleaningComplete(true);
+      }
       return;
     }
     
-    // Set the new path (excluding the first step which is the current position)
-    setCurrentPath(path);
+    // Remove the first position (current position) and set the rest as the path
+    setCurrentPath(path.slice(1));
   }, [robotPos, currentPath, isCleaningComplete, totalCleanableCells, grid, maxMoves, stopSignal, moves]);
+
+  // Report results when cleaning is complete
   useEffect(() => {
     if (isCleaningComplete) {
       // Double-check that all non-blocked cells were actually visited
@@ -255,7 +225,7 @@ const Robot3Component: React.FC<RobotProps> = ({
       }
       
       const result: RobotResult = {
-        cellsVisited: visitCount.flat().filter(count => count > 0).length,
+        cellsVisited: visitCount.flat().filter((count: number) => count > 0).length,
         totalCleanableCells,
         isCleaningComplete: allVisited, // Only true if all non-blocked cells were visited
         moves: moves - 1, // Subtract 1 because we start at move 1
@@ -265,7 +235,6 @@ const Robot3Component: React.FC<RobotProps> = ({
     }
   }, [isCleaningComplete, visitCount, totalCleanableCells, moves, onFinish, grid, gridSize, robotName]);
   
-
   // Handle stop signal
   useEffect(() => {
     if (stopSignal) {
@@ -279,16 +248,7 @@ const Robot3Component: React.FC<RobotProps> = ({
     }
   }, [stopSignal, visitCount, totalCleanableCells, moves, onFinish]);
 
-  // Helper function to get color with opacity
-  const getColorWithOpacity = (color: string, opacity: number) => {
-    const colors: Record<string, string> = {
-      red: `rgba(252, 165, 165, ${opacity})`,
-      green: `rgba(134, 239, 172, ${opacity})`,
-      blue: `rgba(147, 197, 253, ${opacity})`,
-      purple: `rgba(216, 180, 254, ${opacity})`
-    };
-    return colors[color] || color;
-  };
+  // Using shared getColorWithOpacity from utils/colors
 
   return (
     <div className="p-4 border rounded-lg shadow-sm bg-white">
@@ -311,11 +271,12 @@ const Robot3Component: React.FC<RobotProps> = ({
         </div>
       )}
       
-      <div className="grid gap-1 bg-gray-100 p-2 rounded-md" 
+      <div id="grid" className="grid gap-1 bg-gray-100 p-2 rounded-md" 
            style={{
              gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))`,
              maxWidth: '100%',
-             margin: '0 auto'
+             margin: '0 auto',
+             display: 'grid'
            }}>
         {grid.map((row, i) =>
           row.map((cell, j) => (
@@ -348,4 +309,4 @@ const Robot3Component: React.FC<RobotProps> = ({
   );
 };
 
-export default Robot3Component;
+export default Robot4Component;

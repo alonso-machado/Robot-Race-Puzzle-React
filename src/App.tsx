@@ -1,39 +1,12 @@
-import { useState } from 'react';
-import Robot1Component from './Robot1Component';
-import Robot2Component from './Robot2Component';
-import Robot3Component from './Robot3Component';
-import Robot4Component from './Robot4Component';
-import { RobotResult, RobotConfig } from './types/robot';
+import React, { useState } from 'react';
+import Robot1Component from './components/Robot1Component';
+import Robot2Component from './components/Robot2Component';
+import Robot3Component from './components/Robot3Component';
+import Robot4Component from './components/Robot4Component';
+import { RobotResult } from './types/robotModels';
+import { ROBOT_CONFIG } from './types/robotConfig';
 
 type Grid = number[][];
-
-// Robot configurations
-export const ROBOT_CONFIG: Record<string, RobotConfig> = {
-  ROBOT1: {
-    name: 'Robot Red (Greedy)',
-    emoji: '🤖', // Standard robot
-    color: 'red',
-    description: 'Greedy algorithm picks the least-visited adjacent cell'
-  },
-  ROBOT2: {
-    name: 'Robot Green (BFS)',
-    emoji: '🚗', // Car (BFS explores widely like a car on roads)
-    color: 'green',
-    description: 'Breadth-First Search explores all neighbors at the current depth'
-  },
-  ROBOT3: {
-    name: 'Robot Blue (A*)',
-    emoji: '🚓', // Police car (A* is efficient like emergency response)
-    color: 'blue',
-    description: 'A* algorithm finds the shortest path using heuristics'
-  },
-  ROBOT4: {
-    name: 'Robot Purple (DFS)',
-    emoji: '🏎️', // Racing car (DFS goes deep quickly like a race car)
-    color: 'purple',
-    description: 'DFS explores as far as possible along each branch before backtracking'
-  }
-};
 
 // Game constants
 const defaultGridSize = 8;
@@ -44,7 +17,7 @@ const MIN_OBSTACLE_CHANCE = 0.1; // 10%
 const MAX_OBSTACLE_CHANCE = 0.3; // 30%
 const DEFAULT_OBSTACLE_CHANCE = 0.15; // 15%
 
-// Generates a grid with random obstacles, always ensures center is open
+// Generates a grid with random obstacles, always ensures where robot starts is not an obstacle
 // DO NOT CHANGE this generateGrid algorithm it was the only part written by the creator
 const generateGrid = (gridSizeLocal: number, obstacleProbability: number): Grid => {
   console.log(
@@ -246,7 +219,14 @@ const App: React.FC = () => {
       </header>
 
       {raceStarted && grid && grid.length > 0 && grid[0].length > 0 && (
-        <div id="race-container" className="flex flex-1 flex-col w-full p-4">
+        <div id="race-container" className='race-container'
+        style={{
+          maxWidth: '100%',
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: '1rem'
+        }}>
           {/* Robot 1 */}
             <Robot1Component
               grid={grid}
@@ -254,10 +234,7 @@ const App: React.FC = () => {
               maxMoves={maxMoves}
               onFinish={setRobot1Result}
               stopSignal={!raceStarted}
-              robotName={ROBOT_CONFIG.ROBOT1.name}
-              robotEmoji={ROBOT_CONFIG.ROBOT1.emoji}
-              robotColor={ROBOT_CONFIG.ROBOT1.color}
-              robotDescription={ROBOT_CONFIG.ROBOT1.description}
+              robotConfig={ROBOT_CONFIG.ROBOT1}
             />
             <Robot2Component
               grid={grid}
@@ -265,10 +242,7 @@ const App: React.FC = () => {
               maxMoves={maxMoves}
               onFinish={setRobot2Result}
               stopSignal={!raceStarted}
-              robotName={ROBOT_CONFIG.ROBOT2.name}
-              robotEmoji={ROBOT_CONFIG.ROBOT2.emoji}
-              robotColor={ROBOT_CONFIG.ROBOT2.color}
-              robotDescription={ROBOT_CONFIG.ROBOT2.description}
+              robotConfig={ROBOT_CONFIG.ROBOT2}
             />
             <Robot3Component
               grid={grid}
@@ -276,10 +250,7 @@ const App: React.FC = () => {
               maxMoves={maxMoves}
               onFinish={setRobot3Result}
               stopSignal={!raceStarted}
-              robotName={ROBOT_CONFIG.ROBOT3.name}
-              robotEmoji={ROBOT_CONFIG.ROBOT3.emoji}
-              robotColor={ROBOT_CONFIG.ROBOT3.color}
-              robotDescription={ROBOT_CONFIG.ROBOT3.description}
+              robotConfig={ROBOT_CONFIG.ROBOT3}
             />
             <Robot4Component
               grid={grid}
@@ -287,10 +258,7 @@ const App: React.FC = () => {
               maxMoves={maxMoves}
               onFinish={setRobot4Result}
               stopSignal={!raceStarted}
-              robotName={ROBOT_CONFIG.ROBOT4.name}
-              robotEmoji={ROBOT_CONFIG.ROBOT4.emoji}
-              robotColor={ROBOT_CONFIG.ROBOT4.color}
-              robotDescription={ROBOT_CONFIG.ROBOT4.description}
+              robotConfig={ROBOT_CONFIG.ROBOT4}
             />
         </div>
       )}
